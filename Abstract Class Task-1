@@ -1,0 +1,156 @@
+Deposit
+package com.epam.rd.qa.aggregation;
+ 
+import java.math.BigDecimal;
+ 
+public abstract class Deposit {
+    // TODO Place your code here
+    protected final BigDecimal amount;
+    protected final int period;
+ 
+    protected Deposit(BigDecimal depositAmount, int depositPeriod) {
+        if (depositAmount == null || depositAmount.compareTo(new BigDecimal(0)) <= 0 || depositPeriod <= 0){
+            throw new IllegalArgumentException("Invalid argument");
+        }
+ 
+        amount = depositAmount;
+        period = depositPeriod;
+    }
+ 
+    public BigDecimal getAmount() {
+        return amount;
+    }
+ 
+    public int getPeriod() {
+        return period;
+    }
+ 
+    public abstract BigDecimal income();
+}
+ 
+client
+package com.epam.rd.qa.aggregation;
+ 
+import java.math.BigDecimal;
+ 
+public class Client {
+ 
+    private final Deposit[] deposits;
+ 
+    public Client() {
+        // TODO Replace throw with your code
+//        throw new UnsupportedOperationException();
+        deposits = new Deposit[10];
+    }
+ 
+    public boolean addDeposit(Deposit deposit) {
+        // TODO Replace throw with your code
+//        throw new UnsupportedOperationException();
+        for (int i=0; i<deposits.length; i++) {
+            if (deposits[i] == null) {
+                deposits[i] = deposit;
+                return true;
+            }
+        }
+ 
+        return false;
+    }
+ 
+    public BigDecimal totalIncome() {
+        // TODO Replace throw with your code
+//        throw new UnsupportedOperationException();
+        BigDecimal total = BigDecimal.ZERO;
+        for (Deposit deposit : deposits) {
+            if (deposit != null) {
+                BigDecimal income = deposit.income();
+                total = total.add(income);
+            }
+        }
+        return total;
+    }
+ 
+    public BigDecimal maxIncome() {
+        // TODO Replace throw with your code
+//        throw new UnsupportedOperationException();
+        BigDecimal maxInc = BigDecimal.ZERO;
+        for (Deposit deposit : deposits) {
+            if (deposit != null && deposit.income().compareTo(maxInc) > 0) {
+                maxInc = deposit.income();
+            }
+        }
+        return maxInc;
+    }
+ 
+    public BigDecimal getIncomeByNumber(int number) {
+        // TODO Replace throw with your code
+//        throw new UnsupportedOperationException();
+        if (number>=0 && number < deposits.length && deposits[number] != null)
+            return deposits[number].income();
+        return BigDecimal.ZERO.setScale(2);
+    }
+}
+ 
+basedeposit
+package com.epam.rd.qa.aggregation;
+ 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+ 
+public class BaseDeposit extends Deposit {
+    // TODO Place your code here
+ 
+    public BaseDeposit(BigDecimal amt, int period) {
+        super(amt, period);
+    }
+ 
+    @Override
+    public BigDecimal income() {
+        BigDecimal inc = amount.multiply(BigDecimal.valueOf(Math.pow(1.05, period))).subtract(amount);
+        return inc.setScale(2, RoundingMode.DOWN);
+    }
+}
+longdeposit
+package com.epam.rd.qa.aggregation;
+ 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+ 
+public class LongDeposit extends Deposit {
+    // TODO Place your code here
+ 
+    public LongDeposit(BigDecimal amt, int period) {
+        super(amt, period);
+    }
+ 
+    @Override
+    public BigDecimal income() {
+        BigDecimal income = BigDecimal.valueOf(amount.doubleValue());
+        for (int i = 6; i < period; i++) {
+            income = income.add(income.multiply(BigDecimal.valueOf(0.15)));
+        }
+        return income.subtract(amount).setScale(2, RoundingMode.DOWN);
+    }
+}
+ 
+special 
+package com.epam.rd.qa.aggregation;
+ 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+ 
+public class SpecialDeposit extends Deposit {
+    // TODO Place your code here
+ 
+    public SpecialDeposit(BigDecimal amt, int period) {
+        super(amt, period);
+    }
+ 
+    @Override
+    public BigDecimal income() {
+        BigDecimal income = BigDecimal.valueOf(amount.doubleValue());
+        for (int i = 1; i <= period; i++) {
+            income = income.add(income.multiply(BigDecimal.valueOf(i / 100.0)));
+        }
+        return income.subtract(amount).setScale(2, RoundingMode.DOWN);
+    }
+}
