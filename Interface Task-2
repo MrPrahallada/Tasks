@@ -1,0 +1,184 @@
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+public class Client implements Iterable<Deposit> {
+    private Deposit[] deposits;
+
+    public Client() {
+        this.deposits = new Deposit[10];
+    }
+
+    public Client(Deposit[] deposits) {
+        if (deposits == null) {
+            throw new IllegalArgumentException("Deposits array cannot be null.");
+        }
+        this.deposits = deposits;
+    }
+
+    public boolean addDeposit(Deposit deposit) {
+        for (int i = 0; i < deposits.length; i++) {
+            if (deposits[i] == null) {
+                deposits[i] = deposit;
+                return true;
+            }
+        }
+        return false;
+    }
+    public BigDecimal totalIncome() {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Deposit deposit : deposits) {
+            if (deposit != null) {
+                total =total.add( deposit.income());
+            }
+        }
+        return total;
+    }
+    public BigDecimal maxIncome() {
+        BigDecimal maxIncome = BigDecimal.ZERO;
+        for (Deposit deposit : deposits) {
+            if (deposit != null ) {
+                BigDecimal income=deposit.income();
+                if(income.compareTo(maxIncome) > 0){
+                    maxIncome = income;
+                }
+            }
+        }
+        return maxIncome;
+    }
+    public BigDecimal getIncomeByNumber(int number) {
+        if (number >= 0 && number < deposits.length && deposits[number] != null) {
+            return deposits[number].income();
+        }
+        return BigDecimal.ZERO ;
+    }
+
+    public void sortDeposits() {
+        Arrays.sort(deposits);
+    }
+    public int countPossibleToProlongDeposit() {
+        int count = 0;
+        for (Deposit deposit : deposits) {
+            if (deposit != null && deposit instanceof Prolongable) {
+                Prolongable prolongableDeposit = (Prolongable) deposit;
+                if (prolongableDeposit.canToProlong()) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+    @Override
+    public Iterator<Deposit> iterator() {
+        return new DepositIterator();
+    }
+
+    private class DepositIterator implements Iterator<Deposit> {
+        private int currentIndex = 0;
+
+        @Override
+        public boolean hasNext() {
+            return currentIndex < deposits.length && deposits[currentIndex] != null;
+        }
+        @Override
+        public Deposit next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            return deposits[currentIndex++];
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+}
+
+package com.epam.rd.qa.collections;
+
+import java.math.BigDecimal;
+
+abstract  class Deposit implements Comparable<Deposit> {
+    protected final BigDecimal amount;
+    protected final int period;
+
+    protected Deposit(BigDecimal depositAmount, int depositPeriod) {
+        if (depositAmount == null||depositAmount.compareTo(BigDecimal.ZERO)<=0|| depositPeriod <= 0) {
+            throw new IllegalArgumentException("Amount and period must be greater than 0.");
+        }
+        this.amount = depositAmount;
+        this.period = depositPeriod;
+    }
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public int getPeriod() {
+        return period;
+    }
+
+    public abstract BigDecimal income();
+
+    @Override
+    public int compareTo(Deposit other) {
+        return this.income().add(this.getAmount()).compareTo(other.income().add(other.getAmount()));
+    }
+
+}
+
+package com.epam.rd.qa.collections;
+
+import java.math.BigDecimal;
+
+public class LongDeposit extends Deposit implements Prolongable{
+    public LongDeposit(BigDecimal amount, int period) {
+        super(amount, period);
+    }
+
+    @Override
+    public BigDecimal income() {
+        BigDecimal total = getAmount();
+        int monthsWithoutInterest = Math.min(6, getPeriod());
+
+        for (int i = 0; i < monthsWithoutInterest; i++) {
+            total =total.add(BigDecimal.ZERO) ; // No interest for the first 6 months
+        }
+        for (int i = monthsWithoutInterest; i < getPeriod(); i++) {
+            total =total.add( total.multiply(BigDecimal.valueOf(0.15)) ); // 15% interest after 6 months
+        }
+
+        return total.subtract(getAmount());
+    }
+
+    @Override
+    public boolean canToProlong() {
+        return getPeriod()<=36; // Long-term deposit can be prolonged if period <= 3 years (36 months)
+    }
+}
+
+package com.epam.rd.qa.collections;
+
+import java.math.BigDecimal;
+
+public class SpecialDeposit extends Deposit implements Prolongable{
+    public SpecialDeposit(BigDecimal amount, int period) {
+        super(amount, period);
+    }
+    @Override
+    public BigDecimal income() {
+        BigDecimal total = amount;
+        BigDecimal percent = BigDecimal.valueOf(0.01); // 1% initial percent
+
+        for (int i = 0; i < getPeriod(); i++) {
+            total = total.add(total.multiply(percent));
+            percent = percent.add(BigDecimal.valueOf(0.01));// Increment by 1% each month
+        }
+        return total.subtract(amount);
+    }
+    @Override
+    public boolean canToProlong() {
+        return getAmount().compareTo(BigDecimal.valueOf(1000)) > 0;
+    }
+}
